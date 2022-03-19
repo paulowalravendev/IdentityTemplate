@@ -1,4 +1,5 @@
 using IdentityTemplate.Api.Features.UserRegister;
+using IdentityTemplate.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IdentityTemplate.Api.Controllers;
@@ -6,10 +7,29 @@ namespace IdentityTemplate.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : BaseController
 {
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpPost("hello-world")]
-    public ActionResult<string> Hello(UserRegisterInputModel inputModel)
+    private readonly IAuthService _service;
+    private readonly IUserService _userService;
+
+    public AuthController(IAuthService service, IUserService userService)
     {
-        return Ok("Hello World");
+        _service = service;
+        _userService = userService;
+    }
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(UserRegisterInputModel inputModel)
+    {
+        try
+        {
+            var userTokenViewModel = await _service.Register(inputModel);
+            var userId = await _userService.Register(inputModel, userTokenViewModel!.UserToken.Id);
+            userTokenViewModel.UserToken.UserId = userId;
+            return CustomResponse(userTokenViewModel);
+        }
+        catch (CreateUserWithIdentityErrorsException ex)
+        {
+            return CustomResponseError(ex.Errors);
+        }
     }
 }

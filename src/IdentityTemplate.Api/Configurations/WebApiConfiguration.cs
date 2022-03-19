@@ -1,5 +1,6 @@
 using FluentValidation.AspNetCore;
 using IdentityTemplate.Api.Data.DbContexts;
+using IdentityTemplate.Api.Services;
 using IdentityTemplate.Api.Settings;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,7 @@ public static class WebApiConfiguration
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"))
             .AddEfCoreConfiguration(configuration)
             .AddIdentityConfiguration()
+            .AddApplicationServices()
             .AddControllers()
             .AddFluentWithSwaggerConfiguration()
             .AddEndpointsApiExplorer()
@@ -30,7 +32,7 @@ public static class WebApiConfiguration
         app.Run();
     }
 
-    #region EF Core
+    #region EFCore
     public static IServiceCollection AddEfCoreConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         return services.AddSqlServer<ApplicationDbContext>(configuration.GetConnectionString("DefaultConnection"));
@@ -53,6 +55,14 @@ public static class WebApiConfiguration
     {
         return mvcBuilder.AddFluentValidation(c => c.RegisterValidatorsFromAssemblyContaining<Program>())
             .Services.AddFluentValidationRulesToSwagger();
+    }
+    #endregion
+
+    #region AddApplicationServices
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    {
+        return services.AddScoped<IAuthService, AuthService>()
+            .AddScoped<IUserService, UserService>();
     }
     #endregion
 
