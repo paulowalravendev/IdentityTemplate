@@ -1,6 +1,8 @@
 using FluentValidation.AspNetCore;
+using IdentityTemplate.Api.Data.DbContexts;
 using IdentityTemplate.Api.Settings;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 
 namespace IdentityTemplate.Api.Configurations;
@@ -10,6 +12,8 @@ public static class WebApiConfiguration
     public static void AddWebApiConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"))
+            .AddEfCoreConfiguration(configuration)
+            .AddIdentityConfiguration()
             .AddControllers()
             .AddFluentWithSwaggerConfiguration()
             .AddEndpointsApiExplorer()
@@ -20,10 +24,29 @@ public static class WebApiConfiguration
     {
         app.UseSwaggerConfiguration();
         app.UseHttpsRedirection();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
     }
+
+    #region EF Core
+    public static IServiceCollection AddEfCoreConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        return services.AddSqlServer<ApplicationDbContext>(configuration.GetConnectionString("DefaultConnection"));
+    }
+    #endregion
+
+    #region Identity
+    public static IServiceCollection AddIdentityConfiguration(this IServiceCollection services)
+    {
+        services.AddDefaultIdentity<IdentityUser>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+        return services;
+    }
+    #endregion
 
     #region FluentWithSwagger
     private static IServiceCollection AddFluentWithSwaggerConfiguration(this IMvcBuilder mvcBuilder)
